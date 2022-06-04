@@ -24,10 +24,24 @@ var (
 	rrChannelsMutex = sync.Mutex{}
 )
 
+// Create channel
+func CreateCh[T any](name string, size int) error {
+	channelsMutex.Lock()
+	defer channelsMutex.Unlock()
+
+	if _, ok := channels[name]; ok {
+		return fmt.Errorf("%s exist", name)
+	} else {
+		channels[name] = channel_t[T]{
+			C: make(chan T, size),
+		}
+		return nil
+	}
+}
+
 // Get the channel[T] with the name.
-// If the channel does not exist, will create the channel[T] with size.
-// Return error if the [T] is not same as the recorded [T].
-func GetCh[T any](name string, size int) (chan T, error) {
+// Return error if the [T] is not same as the recorded [T] or channel's name does not exist
+func GetCh[T any](name string) (chan T, error) {
 	channelsMutex.Lock()
 	defer channelsMutex.Unlock()
 
@@ -41,18 +55,13 @@ func GetCh[T any](name string, size int) (chan T, error) {
 			return nil, fmt.Errorf("Required T is \"%s\" but get \"%s\"", t.Name()[startIndex:len(t.Name())-1], t2.Name()[startIndex:len(t2.Name())-1])
 		}
 	} else {
-		ch := make(chan T, size)
-		channelInfo := channel_t[T]{
-			C: ch,
-		}
-		channels[name] = channelInfo
-		return channelInfo.C, nil
+		return nil, fmt.Errorf("%s does not exist", name)
 	}
 }
 
 // Must get channel
-func MustGetCh[T any](name string, size int) chan T {
-	if c, err := GetCh[T](name, size); err != nil {
+func MustGetCh[T any](name string) chan T {
+	if c, err := GetCh[T](name); err != nil {
 		panic(err)
 	} else {
 		return c
@@ -91,10 +100,26 @@ func IsChExist(name string) bool {
 	return ok
 }
 
+// Create RR channel
+func CreateRRCh[T any](name string, size int) error {
+	rrChannelsMutex.Lock()
+	defer rrChannelsMutex.Unlock()
+
+	if _, ok := rrChannels[name]; ok {
+		return fmt.Errorf("%s exist", name)
+	} else {
+		rrChannels[name] = rrChannel_t[T]{
+			Request:  make(chan T, size),
+			Response: make(chan T, size),
+		}
+		return nil
+	}
+}
+
 // Get the rrChannel[T] with the name.
 // If the RR channel does not exist, will create the rrChannel[T] with size.
 // Return error if the [T] is not same as the recorded [T].
-func GetRRCh[T any](name string, size int) (chan T, chan T, error) {
+func GetRRCh[T any](name string) (chan T, chan T, error) {
 	rrChannelsMutex.Lock()
 	defer rrChannelsMutex.Unlock()
 
@@ -109,18 +134,13 @@ func GetRRCh[T any](name string, size int) (chan T, chan T, error) {
 			return nil, nil, fmt.Errorf("Required T is \"%s\" but get \"%s\"", t.Name()[startIndex:len(t.Name())-1], t2.Name()[startIndex:len(t2.Name())-1])
 		}
 	} else {
-		channelInfo := rrChannel_t[T]{
-			Request:  make(chan T, size),
-			Response: make(chan T, size),
-		}
-		rrChannels[name] = channelInfo
-		return channelInfo.Request, channelInfo.Response, nil
+		return nil, nil, fmt.Errorf("%s does not exist", name)
 	}
 }
 
 // Must get RR channel
-func MustGetRRCh[T any](name string, size int) (chan T, chan T) {
-	if rq, rp, err := GetRRCh[T](name, size); err != nil {
+func MustGetRRCh[T any](name string) (chan T, chan T) {
+	if rq, rp, err := GetRRCh[T](name); err != nil {
 		panic(err)
 	} else {
 		return rq, rp
