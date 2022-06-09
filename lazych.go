@@ -126,7 +126,6 @@ func GetRRCh[T any](name string) (chan T, chan T, error) {
 	if _, ok := rrChannels[name]; ok {
 		t := reflect.TypeOf(rrChannels[name])
 		t2 := reflect.TypeOf(rrChannel_t[T]{})
-		fmt.Println(t.Name(), t2.Name())
 		if t.Name() == t2.Name() {
 			return rrChannels[name].(rrChannel_t[T]).Request, rrChannels[name].(rrChannel_t[T]).Response, nil
 		} else {
